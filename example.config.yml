@@ -1,0 +1,12 @@
+window:
+  height: 800
+  font_path: Montserrat-Bold.ttf
+
+key:
+  size: 100
+  border_width: 8
+  codes:
+    - Z
+    - X 
+
+scroll_speed: 1000
