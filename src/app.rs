@@ -1,17 +1,9 @@
-use std::{io::Stdin, time::Instant};
+use std::{str::FromStr, time::Instant};
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
-use sdl2::{
-    event::Event, pixels::Color, render::Canvas, video::Window, EventPump, IntegerOrSdlError,
-};
+use sdl2::{event::Event, pixels::Color, render::Canvas, video::Window, EventPump};
 
-use crate::key::Key;
-
-static SPACE_BETWEEN: u32 = 80;
-static KEY_SIZE: u32 = 130;
-
-static WIDTH: u32 = 500;
-static HEIGHT: u32 = 1000;
+use crate::{config::Config, key::Key};
 
 pub struct App {
     keys: Vec<Key>,
@@ -21,17 +13,22 @@ pub struct App {
     sdl_event_pump: EventPump,
     canvas: Canvas<Window>,
 
-    speed: f64,
+    config: Config,
 }
 
 impl App {
-    pub fn new() -> Result<Self, String> {
+    pub fn new(config: Config) -> Result<Self, String> {
         let sdl_context = sdl2::init()?;
         let video_subsystem = sdl_context.video()?;
         let font_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
 
+        let spacing = config.key.size / 2;
+
+        let screen_width = config.key.size * config.key.codes.len() as u32
+            + spacing * (config.key.codes.len() as u32 + 1);
+
         let window = video_subsystem
-            .window("Key Overlay", WIDTH, HEIGHT)
+            .window("Key Overlay", screen_width, config.window.height)
             .position_centered()
             .build()
             .map_err(|e| e.to_string())?;
@@ -45,18 +42,23 @@ impl App {
 
         let event_pump = sdl_context.event_pump()?;
 
-        let mut font = font_context.load_font("Montserrat-Bold.ttf", 128)?;
+        let font = font_context.load_font(config.clone().window.font_path, 256)?;
 
-        let h_surface = font.render("H").blended(Color::WHITE).unwrap();
-        let k_surface = font.render("K").blended(Color::WHITE).unwrap();
+        let mut keys: Vec<Key> = Vec::new();
 
-        let h_texture = tc.create_texture_from_surface(h_surface).unwrap();
-        let k_texture = tc.create_texture_from_surface(k_surface).unwrap();
+        for (i, k) in config.key.codes.iter().enumerate() {
+            let key_surface = font
+                .render(&*k)
+                .blended(Color::WHITE)
+                .map_err(|e| e.to_string())?;
+            let key_texture = tc
+                .create_texture_from_surface(key_surface)
+                .map_err(|e| e.to_string())?;
 
-        let keys = vec![
-            Key::new(0, KEY_SIZE, 8, SPACE_BETWEEN, Keycode::H, h_texture),
-            Key::new(1, KEY_SIZE, 8, SPACE_BETWEEN, Keycode::K, k_texture),
-        ];
+            let kc = Keycode::from_str(&*k)?;
+
+            keys.push(Key::new(i as u32, config.clone(), kc, key_texture));
+        }
 
         Ok(Self {
             keys,
@@ -66,7 +68,7 @@ impl App {
             canvas,
             sdl_event_pump: event_pump,
 
-            speed: 1000.,
+            config,
         })
     }
 
@@ -104,7 +106,7 @@ impl App {
         for key in &mut self.keys {
             key.update_state(&state);
             key.remove_invisible_rect();
-            key.update_rects(delta, self.speed);
+            key.update_rects(delta, self.config.scroll_speed);
         }
     }
 }
