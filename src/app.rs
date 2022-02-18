@@ -1,7 +1,7 @@
 use std::{str::FromStr, time::Instant};
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
-use sdl2::{event::Event, pixels::Color, render::Canvas, video::Window, EventPump};
+use sdl2::{event::Event, pixels::Color, render::Canvas, ttf::FontStyle, video::Window, EventPump};
 
 use crate::{config::Config, key::Key};
 
@@ -12,8 +12,6 @@ pub struct App {
 
     sdl_event_pump: EventPump,
     canvas: Canvas<Window>,
-
-    config: Config,
 }
 
 impl App {
@@ -24,8 +22,7 @@ impl App {
 
         let spacing = config.key.size / 2;
 
-        let screen_width = config.key.size * config.key.codes.len() as u32
-            + spacing * (config.key.codes.len() as u32 + 1);
+        let screen_width = config.key.codes.len() as u32 * (config.key.size + spacing) + spacing;
 
         let window = video_subsystem
             .window("Key Overlay", screen_width, config.window.height)
@@ -42,7 +39,8 @@ impl App {
 
         let event_pump = sdl_context.event_pump()?;
 
-        let font = font_context.load_font(config.clone().window.font_path, 256)?;
+        let mut font = font_context.load_font(config.clone().window.font_path, 256)?;
+        font.set_style(FontStyle::BOLD);
 
         let mut keys: Vec<Key> = Vec::new();
 
@@ -67,12 +65,10 @@ impl App {
 
             canvas,
             sdl_event_pump: event_pump,
-
-            config,
         })
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), String> {
         let mut delta = 0.;
         'running: loop {
             let frame_start_time = Instant::now();
@@ -84,29 +80,33 @@ impl App {
             }
 
             self.update(delta);
-            self.draw();
+            self.draw()?;
 
             delta = frame_start_time.elapsed().as_secs_f64();
         }
+
+        Ok(())
     }
 
-    fn draw(&mut self) {
+    fn draw(&mut self) -> Result<(), String> {
         self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
 
         for key in &self.keys {
-            key.draw(&mut self.canvas, Color::RGB(100, 100, 100))
+            key.draw(&mut self.canvas, Color::RGB(100, 100, 100))?;
         }
 
         self.canvas.present();
+
+        Ok(())
     }
 
     fn update(&mut self, delta: f64) {
         let state = self.state.get_keys();
         for key in &mut self.keys {
             key.update_state(&state);
-            key.remove_invisible_rect();
-            key.update_rects(delta, self.config.scroll_speed);
+            key.remove_invisible_bar();
+            key.update_bars(delta);
         }
     }
 }

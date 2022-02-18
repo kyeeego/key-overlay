@@ -7,25 +7,30 @@ mod app;
 mod config;
 mod key;
 
-fn main() {
-    let conf_f = match File::open("example.config.yml") {
-        Ok(f) => f,
-        Err(e) => {
-            println!("Unable to read config: {}", e.to_string());
-            return;
-        }
+fn main() -> Result<(), String> {
+    let args: Vec<String> = std::env::args().collect();
+
+    let conf_path = match args.get(1) {
+        Some(p) => p.clone(),
+        None => "config.yml".to_string(),
     };
 
-    let config: Config = match serde_yaml::from_reader(conf_f) {
-        Ok(c) => c,
-        Err(e) => {
-            println!("Unable to parse config: {}", e.to_string());
-            return;
+    let mut config = Config::default();
+
+    match File::open(conf_path) {
+        Ok(f) => {
+            config = match serde_yaml::from_reader(f) {
+                Ok(c) => c,
+                Err(e) => {
+                    return Err(format!("Unable to parse config: {}", e.to_string()));
+                }
+            };
         }
+        _ => {}
     };
 
     match App::new(config) {
         Ok(mut app) => app.run(),
-        Err(e) => println!("Unable to start the app: {}", e),
+        Err(e) => Err(format!("Unable to start the app: {}", e)),
     }
 }
