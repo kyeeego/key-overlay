@@ -117,18 +117,18 @@ impl Key {
                 self.config.key.size - i as u32 * 2,
             );
 
-            canvas.set_draw_color(Color::RGB(255, 255, 255));
+            canvas.set_draw_color(self.config.key.border_color);
             canvas.draw_rect(r)?;
         }
 
         self.draw_code(canvas)
     }
 
-    pub fn draw(&self, canvas: &mut Canvas<Window>, color: Color) -> Result<(), String> {
-        self.draw_key(canvas, color)?;
+    pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
+        self.draw_key(canvas, self.config.key.tile_color)?;
 
         for bar in &self.bars {
-            canvas.set_draw_color(color);
+            canvas.set_draw_color(self.config.key.tile_color);
             canvas.draw_rect(bar.clone())?;
             canvas.fill_rect(bar.clone())?;
         }

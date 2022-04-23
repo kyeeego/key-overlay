@@ -5,6 +5,8 @@ window:
 key:
   size: 100
   border_width: 8
+  tile_color: "#646464"
+  border_color: "#ffffff"
   codes:
     - Z
     - X 

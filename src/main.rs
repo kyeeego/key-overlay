@@ -1,5 +1,3 @@
-use std::fs::File;
-
 use app::App;
 use config::Config;
 
@@ -15,19 +13,7 @@ fn main() -> Result<(), String> {
         None => "config.yml".to_string(),
     };
 
-    let mut config = Config::default();
-
-    match File::open(conf_path) {
-        Ok(f) => {
-            config = match serde_yaml::from_reader(f) {
-                Ok(c) => c,
-                Err(e) => {
-                    return Err(format!("Unable to parse config: {}", e.to_string()));
-                }
-            };
-        }
-        _ => {}
-    };
+    let config = Config::new(conf_path)?;
 
     match App::new(config) {
         Ok(mut app) => app.run(),

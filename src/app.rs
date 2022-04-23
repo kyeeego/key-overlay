@@ -25,7 +25,7 @@ impl App {
         let screen_width = config.key.codes.len() as u32 * (config.key.size + spacing) + spacing;
 
         let window = video_subsystem
-            .window("Key Overlay", screen_width, config.window.height)
+            .window("kye Key Overlay", screen_width, config.window.height)
             .position_centered()
             .build()
             .map_err(|e| e.to_string())?;
@@ -47,7 +47,7 @@ impl App {
         for (i, k) in config.key.codes.iter().enumerate() {
             let key_surface = font
                 .render(&*k)
-                .blended(Color::WHITE)
+                .blended(config.key.border_color)
                 .map_err(|e| e.to_string())?;
             let key_texture = tc
                 .create_texture_from_surface(key_surface)
@@ -93,7 +93,7 @@ impl App {
         self.canvas.clear();
 
         for key in &self.keys {
-            key.draw(&mut self.canvas, Color::RGB(100, 100, 100))?;
+            key.draw(&mut self.canvas)?;
         }
 
         self.canvas.present();
